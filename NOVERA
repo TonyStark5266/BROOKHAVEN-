@@ -1,0 +1,413 @@
+--[[
+    NOVERA INDUSTRIES
+    RP COMMAND PANEL - BUILD 01
+    Plataforma: Roblox Mobile / PC
+    Linguagem: Luau
+]]
+
+local Players = game:GetService("Players")
+local TextChatService = game:GetService("TextChatService")
+local UserInputService = game:GetService("UserInputService")
+
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+-- CONFIGURAÇÕES
+local CONFIG = {
+    Name = "NOVERA",
+    Width = 250,
+    ExpandedHeight = 270,
+    Background = Color3.fromRGB(12, 32, 55),
+    PanelBlue = Color3.fromRGB(24, 75, 115),
+    Accent = Color3.fromRGB(50, 155, 255),
+    Text = Color3.fromRGB(230, 245, 255),
+    RepeatDelay = 0.8
+}
+
+-- COMANDOS
+local Commands = {
+    {Name = "TIRO NA CARA", Message = "/tiro na cara", Repetitions = 1},
+    {Name = "RENDER", Message = "/render", Repetitions = 3},
+    {Name = "FACADA", Message = "/facada", Repetitions = 3},
+    {Name = "TIRO NO PNEU", Message = "/tiro no pneu", Repetitions = 3},
+    {Name = "PD", Message = "/pd", Repetitions = 1}
+}
+
+-- LIMPAR INTERFACE ANTERIOR
+local old = PlayerGui:FindFirstChild("NOVERA_RP_PANEL")
+if old then
+    old:Destroy()
+end
+
+-- INTERFACE PRINCIPAL
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "NOVERA_RP_PANEL"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.IgnoreGuiInset = true
+ScreenGui.Parent = PlayerGui
+
+local Main = Instance.new("Frame")
+Main.Name = "MainPanel"
+Main.Size = UDim2.fromOffset(CONFIG.Width, CONFIG.ExpandedHeight)
+Main.Position = UDim2.new(0, 12, 0.5, -135)
+Main.BackgroundColor3 = CONFIG.Background
+Main.BackgroundTransparency = 0.12
+Main.BorderSizePixel = 0
+Main.ClipsDescendants = true
+Main.Parent = ScreenGui
+
+local Corner = Instance.new("UICorner")
+Corner.CornerRadius = UDim.new(0, 12)
+Corner.Parent = Main
+
+local Stroke = Instance.new("UIStroke")
+Stroke.Color = CONFIG.Accent
+Stroke.Thickness = 1.4
+Stroke.Transparency = 0.2
+Stroke.Parent = Main
+
+-- CABEÇALHO
+local Header = Instance.new("Frame")
+Header.Size = UDim2.new(1, 0, 0, 44)
+Header.BackgroundColor3 = CONFIG.PanelBlue
+Header.BorderSizePixel = 0
+Header.Parent = Main
+
+local HeaderCorner = Instance.new("UICorner")
+HeaderCorner.CornerRadius = UDim.new(0, 12)
+HeaderCorner.Parent = Header
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, -65, 1, 0)
+Title.Position = UDim2.fromOffset(12, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "NOVERA  |  RP"
+Title.TextColor3 = CONFIG.Text
+Title.TextSize = 15
+Title.Font = Enum.Font.GothamBold
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = Header
+
+local Minimize = Instance.new("TextButton")
+Minimize.Size = UDim2.fromOffset(34, 30)
+Minimize.Position = UDim2.new(1, -40, 0, 7)
+Minimize.BackgroundColor3 = CONFIG.Accent
+Minimize.Text = "−"
+Minimize.TextColor3 = Color3.new(1, 1, 1)
+Minimize.TextSize = 21
+Minimize.Font = Enum.Font.GothamBold
+Minimize.Parent = Header
+
+local MinCorner = Instance.new("UICorner")
+MinCorner.CornerRadius = UDim.new(0, 7)
+MinCorner.Parent = Minimize
+
+-- CONTEÚDO
+local Content = Instance.new("Frame")
+Content.Name = "Content"
+Content.Position = UDim2.fromOffset(8, 50)
+Content.Size = UDim2.new(1, -16, 1, -58)
+Content.BackgroundTransparency = 1
+Content.Parent = Main
+
+local CommandGrid = Instance.new("Frame")
+CommandGrid.Size = UDim2.new(1, 0, 0, 132)
+CommandGrid.BackgroundTransparency = 1
+CommandGrid.Parent = Content
+
+local Grid = Instance.new("UIGridLayout")
+Grid.CellSize = UDim2.new(0.5, -5, 0, 39)
+Grid.CellPadding = UDim2.fromOffset(8, 7)
+Grid.SortOrder = Enum.SortOrder.LayoutOrder
+Grid.Parent = CommandGrid
+
+local Status = Instance.new("TextLabel")
+Status.Position = UDim2.new(0, 0, 0, 138)
+Status.Size = UDim2.new(1, 0, 0, 23)
+Status.BackgroundTransparency = 1
+Status.Text = "SISTEMA ONLINE"
+Status.TextColor3 = CONFIG.Accent
+Status.TextSize = 10
+Status.Font = Enum.Font.GothamBold
+Status.Parent = Content
+
+-- CANAL DE CHAT
+local function GetChatChannel()
+    local config = TextChatService:FindFirstChildOfClass(
+        "ChatInputBarConfiguration"
+    )
+
+    if config and config.TargetTextChannel then
+        return config.TargetTextChannel
+    end
+
+    local channels = TextChatService:FindFirstChild("TextChannels")
+
+    if channels then
+        return channels:FindFirstChild("RBXGeneral")
+    end
+
+    return nil
+end
+
+local Sending = false
+
+local function SendCommand(command)
+    if Sending then
+        return
+    end
+
+    Sending = true
+
+    task.spawn(function()
+        local success = true
+
+        for i = 1, command.Repetitions do
+            local channel = GetChatChannel()
+
+            if not channel then
+                success = false
+                break
+            end
+
+            local sent = pcall(function()
+                channel:SendAsync(command.Message)
+            end)
+
+            if not sent then
+                success = false
+                break
+            end
+
+            if i < command.Repetitions then
+                task.wait(CONFIG.RepeatDelay)
+            end
+        end
+
+        Status.Text = success and "COMANDO ENVIADO" or "ERRO NO CHAT"
+        Status.TextColor3 = success
+            and Color3.fromRGB(80, 220, 150)
+            or Color3.fromRGB(255, 100, 100)
+
+        task.wait(1.5)
+        Status.Text = "SISTEMA ONLINE"
+        Status.TextColor3 = CONFIG.Accent
+
+        Sending = false
+    end)
+end
+
+-- CRIAR BOTÕES DOS COMANDOS
+for index, command in ipairs(Commands) do
+    local Button = Instance.new("TextButton")
+    Button.Name = command.Name
+    Button.LayoutOrder = index
+    Button.BackgroundColor3 = CONFIG.PanelBlue
+    Button.Text = command.Name
+    Button.TextColor3 = CONFIG.Text
+    Button.TextSize = 10
+    Button.Font = Enum.Font.GothamBold
+    Button.TextWrapped = true
+    Button.AutoButtonColor = true
+    Button.Parent = CommandGrid
+
+    local ButtonCorner = Instance.new("UICorner")
+    ButtonCorner.CornerRadius = UDim.new(0, 7)
+    ButtonCorner.Parent = Button
+
+    local ButtonStroke = Instance.new("UIStroke")
+    ButtonStroke.Color = CONFIG.Accent
+    ButtonStroke.Transparency = 0.55
+    ButtonStroke.Thickness = 1
+    ButtonStroke.Parent = Button
+
+    Button.Activated:Connect(function()
+        SendCommand(command)
+    end)
+end
+
+-- E.D.I.T.H. - IDENTIFICAÇÃO AUTORIZADA
+local EdithButton = Instance.new("TextButton")
+EdithButton.Name = "EDITH"
+EdithButton.Position = UDim2.new(0, 0, 0, 168)
+EdithButton.Size = UDim2.new(1, 0, 0, 38)
+EdithButton.BackgroundColor3 = CONFIG.PanelBlue
+EdithButton.Text = "E.D.I.T.H.  |  OFF"
+EdithButton.TextColor3 = CONFIG.Text
+EdithButton.TextSize = 11
+EdithButton.Font = Enum.Font.GothamBold
+EdithButton.Parent = Content
+
+local EdithCorner = Instance.new("UICorner")
+EdithCorner.CornerRadius = UDim.new(0, 7)
+EdithCorner.Parent = EdithButton
+
+-- E.D.I.T.H. usa identificação visual sem atravessar paredes
+local EdithEnabled = false
+local Tracked = {}
+
+local function RemoveHighlight(player)
+    local data = Tracked[player]
+
+    if data then
+        if data.Highlight then
+            data.Highlight:Destroy()
+        end
+
+        if data.Label then
+            data.Label:Destroy()
+        end
+
+        Tracked[player] = nil
+    end
+end
+
+local function AddHighlight(player)
+    if player == LocalPlayer or not EdithEnabled then
+        return
+    end
+
+    RemoveHighlight(player)
+
+    local character = player.Character
+    if not character then
+        return
+    end
+
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    local head = character:FindFirstChild("Head")
+
+    if not humanoid or not head then
+        return
+    end
+
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "NOVERA_EDITH"
+    highlight.Adornee = character
+    highlight.FillColor = Color3.fromRGB(255, 35, 35)
+    highlight.OutlineColor = Color3.fromRGB(255, 90, 90)
+    highlight.FillTransparency = 0.65
+    highlight.OutlineTransparency = 0.1
+    highlight.DepthMode = Enum.HighlightDepthMode.Occluded
+    highlight.Parent = character
+
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "NOVERA_NAME"
+    billboard.Adornee = head
+    billboard.Size = UDim2.fromOffset(150, 28)
+    billboard.StudsOffset = Vector3.new(0, 2.5, 0)
+    billboard.AlwaysOnTop = false
+    billboard.MaxDistance = 500
+    billboard.Parent = head
+
+    local nameLabel = Instance.new("TextLabel")
+    nameLabel.Size = UDim2.fromScale(1, 1)
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.Text = player.Name
+    nameLabel.TextColor3 = Color3.fromRGB(255, 65, 65)
+    nameLabel.TextStrokeTransparency = 0.2
+    nameLabel.TextScaled = true
+    nameLabel.Font = Enum.Font.GothamBold
+    nameLabel.Parent = billboard
+
+    Tracked[player] = {
+        Highlight = highlight,
+        Label = billboard
+    }
+end
+
+local function SetupPlayer(player)
+    player.CharacterAdded:Connect(function()
+        if EdithEnabled then
+            task.wait(1)
+            AddHighlight(player)
+        end
+    end)
+
+    if EdithEnabled and player.Character then
+        AddHighlight(player)
+    end
+end
+
+for _, player in ipairs(Players:GetPlayers()) do
+    SetupPlayer(player)
+end
+
+Players.PlayerAdded:Connect(SetupPlayer)
+
+Players.PlayerRemoving:Connect(function(player)
+    RemoveHighlight(player)
+end)
+
+EdithButton.Activated:Connect(function()
+    EdithEnabled = not EdithEnabled
+
+    if EdithEnabled then
+        EdithButton.Text = "E.D.I.T.H.  |  ON"
+        EdithButton.BackgroundColor3 = Color3.fromRGB(120, 35, 35)
+
+        for _, player in ipairs(Players:GetPlayers()) do
+            AddHighlight(player)
+        end
+    else
+        EdithButton.Text = "E.D.I.T.H.  |  OFF"
+        EdithButton.BackgroundColor3 = CONFIG.PanelBlue
+
+        for player in pairs(Tracked) do
+            RemoveHighlight(player)
+        end
+    end
+end)
+
+-- MINIMIZAR E RESTAURAR
+local Minimized = false
+
+Minimize.Activated:Connect(function()
+    Minimized = not Minimized
+    Content.Visible = not Minimized
+    Main.Size = Minimized
+        and UDim2.fromOffset(CONFIG.Width, 44)
+        or UDim2.fromOffset(CONFIG.Width, CONFIG.ExpandedHeight)
+
+    Minimize.Text = Minimized and "+" or "−"
+end)
+
+-- ARRASTAR PAINEL (TOQUE E MOUSE)
+local Dragging = false
+local DragStart
+local StartPosition
+
+Header.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+
+        Dragging = true
+        DragStart = input.Position
+        StartPosition = Main.Position
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if Dragging and (
+        input.UserInputType == Enum.UserInputType.MouseMovement
+        or input.UserInputType == Enum.UserInputType.Touch
+    ) then
+        local delta = input.Position - DragStart
+
+        Main.Position = UDim2.new(
+            StartPosition.X.Scale,
+            StartPosition.X.Offset + delta.X,
+            StartPosition.Y.Scale,
+            StartPosition.Y.Offset + delta.Y
+        )
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+        Dragging = false
+    end
+end)
+
+print("[NOVERA] RP PANEL BUILD 01 carregado.")
