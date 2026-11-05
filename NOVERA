@@ -10,7 +10,7 @@ local TextChatService = game:GetService("TextChatService")
 local Player = Players.LocalPlayer
 
 local CONFIG = {
-    RepeatDelay = 0.8
+    RepeatDelay = 0.2
 }
 
 local Commands = {
