@@ -1,52 +1,217 @@
 
+--==================================================
 -- NOVERA INDUSTRIES
--- RP KEYBOARD SYSTEM - BUILD 02
--- Roblox Studio / PC
+-- KEYBIND MANAGER - BUILD 03
+-- ROBLOX STUDIO | PC
+--==================================================
 
 local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
+local UIS = game:GetService("UserInputService")
 local TextChatService = game:GetService("TextChatService")
 
 local Player = Players.LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
 
+-- CONFIGURATION
 local CONFIG = {
-    RepeatDelay = 0.2
+    SendInterval = 0.1, -- Intervalo conservador entre mensagens
+    Width = 280,
+    Height = 330
 }
 
 local Commands = {
-    [Enum.KeyCode.V] = {
-        Name = "TIRO NA CARA",
+    {
+        Id = "Tiro",
+        Name = "/tiro na cara",
         Message = "/tiro na cara",
         Repetitions = 1
     },
-
-    [Enum.KeyCode.R] = {
-        Name = "RENDER",
+    {
+        Id = "Render",
+        Name = "/render",
         Message = "/render",
         Repetitions = 3
     },
-
-    [Enum.KeyCode.F] = {
-        Name = "FACADA",
+    {
+        Id = "Facada",
+        Name = "/facada",
         Message = "/facada",
         Repetitions = 3
     },
-
-    [Enum.KeyCode.B] = {
-        Name = "TIRO NO PNEU",
+    {
+        Id = "Pneu",
+        Name = "/tiro no pneu",
         Message = "/tiro no pneu",
         Repetitions = 3
     },
-
-    [Enum.KeyCode.P] = {
-        Name = "PD",
+    {
+        Id = "PD",
+        Name = "/pd",
         Message = "/pd",
         Repetitions = 1
     }
 }
 
-local Busy = false
+-- DEFAULT KEYBINDS
+local Bindings = {
+    Tiro = Enum.KeyCode.V,
+    Render = Enum.KeyCode.R,
+    Facada = Enum.KeyCode.F,
+    Pneu = Enum.KeyCode.B,
+    PD = Enum.KeyCode.P
+}
 
+-- CLEAN OLD GUI
+local Old = PlayerGui:FindFirstChild("NOVERA_KEYBINDS")
+if Old then
+    Old:Destroy()
+end
+
+-- GUI
+local Gui = Instance.new("ScreenGui")
+Gui.Name = "NOVERA_KEYBINDS"
+Gui.ResetOnSpawn = false
+Gui.DisplayOrder = 20
+Gui.Parent = PlayerGui
+
+local function Corner(object, radius)
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0, radius)
+    c.Parent = object
+end
+
+local function Stroke(object, color)
+    local s = Instance.new("UIStroke")
+    s.Color = color
+    s.Thickness = 1
+    s.Transparency = 0.3
+    s.Parent = object
+end
+
+local BLUE = Color3.fromRGB(35, 125, 205)
+local DARK = Color3.fromRGB(12, 29, 48)
+local BUTTON = Color3.fromRGB(23, 65, 100)
+local WHITE = Color3.fromRGB(230, 243, 255)
+
+-- FLOATING OPEN BUTTON
+local Toggle = Instance.new("TextButton")
+Toggle.Name = "OpenButton"
+Toggle.Size = UDim2.fromOffset(43, 43)
+Toggle.Position = UDim2.new(1, -58, 0.55, 0)
+Toggle.BackgroundColor3 = DARK
+Toggle.Text = "N"
+Toggle.TextColor3 = WHITE
+Toggle.TextSize = 21
+Toggle.Font = Enum.Font.GothamBold
+Toggle.Parent = Gui
+
+Corner(Toggle, 12)
+Stroke(Toggle, BLUE)
+
+-- MAIN PANEL
+local Main = Instance.new("Frame")
+Main.Name = "MainPanel"
+Main.Size = UDim2.fromOffset(CONFIG.Width, CONFIG.Height)
+Main.Position = UDim2.new(1, -295, 0.5, -165)
+Main.BackgroundColor3 = DARK
+Main.BackgroundTransparency = 0.06
+Main.Visible = false
+Main.Parent = Gui
+
+Corner(Main, 12)
+Stroke(Main, BLUE)
+
+-- HEADER
+local Header = Instance.new("Frame")
+Header.Size = UDim2.new(1, 0, 0, 46)
+Header.BackgroundColor3 = BUTTON
+Header.BorderSizePixel = 0
+Header.Parent = Main
+
+Corner(Header, 12)
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, -55, 1, 0)
+Title.Position = UDim2.fromOffset(12, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "NOVERA | KEYBINDS"
+Title.TextColor3 = WHITE
+Title.TextSize = 14
+Title.Font = Enum.Font.GothamBold
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = Header
+
+local Close = Instance.new("TextButton")
+Close.Size = UDim2.fromOffset(32, 30)
+Close.Position = UDim2.new(1, -38, 0, 8)
+Close.BackgroundColor3 = BLUE
+Close.Text = "×"
+Close.TextColor3 = WHITE
+Close.TextSize = 20
+Close.Font = Enum.Font.GothamBold
+Close.Parent = Header
+
+Corner(Close, 7)
+
+-- INSTRUCTIONS
+local Instruction = Instance.new("TextLabel")
+Instruction.Position = UDim2.fromOffset(10, 53)
+Instruction.Size = UDim2.new(1, -20, 0, 30)
+Instruction.BackgroundTransparency = 1
+Instruction.Text = "Selecione ALTERAR e pressione uma tecla."
+Instruction.TextColor3 = Color3.fromRGB(145, 190, 225)
+Instruction.TextSize = 10
+Instruction.Font = Enum.Font.Gotham
+Instruction.Parent = Main
+
+-- COMMAND LIST
+local List = Instance.new("Frame")
+List.Position = UDim2.fromOffset(10, 91)
+List.Size = UDim2.new(1, -20, 0, 195)
+List.BackgroundTransparency = 1
+List.Parent = Main
+
+local Layout = Instance.new("UIListLayout")
+Layout.Padding = UDim.new(0, 7)
+Layout.SortOrder = Enum.SortOrder.LayoutOrder
+Layout.Parent = List
+
+local Status = Instance.new("TextLabel")
+Status.Position = UDim2.new(0, 10, 1, -31)
+Status.Size = UDim2.new(1, -20, 0, 21)
+Status.BackgroundTransparency = 1
+Status.Text = "SYSTEM ONLINE"
+Status.TextColor3 = BLUE
+Status.TextSize = 10
+Status.Font = Enum.Font.GothamBold
+Status.Parent = Main
+
+-- KEY CAPTURE
+local WaitingForKey = nil
+local Sending = false
+
+local function SetStatus(message, color)
+    Status.Text = message
+    Status.TextColor3 = color or BLUE
+end
+
+local function GetCommandById(id)
+    for _, command in ipairs(Commands) do
+        if command.Id == id then
+            return command
+        end
+    end
+end
+
+local function KeyAlreadyUsed(key, currentId)
+    for id, assignedKey in pairs(Bindings) do
+        if id ~= currentId and assignedKey == key then
+            return id
+        end
+    end
+end
+
+-- CHAT CHANNEL
 local function GetChannel()
     local channels = TextChatService:FindFirstChild("TextChannels")
 
@@ -55,21 +220,23 @@ local function GetChannel()
     end
 
     return channels:FindFirstChild("RBXGeneral")
+        or channels:FindFirstChildWhichIsA("TextChannel")
 end
 
-local function ExecuteCommand(command)
-    if Busy then
+-- SEND COMMAND
+local function SendCommand(command)
+    if Sending then
         return
     end
 
-    Busy = true
+    Sending = true
 
     task.spawn(function()
         local channel = GetChannel()
 
         if not channel then
-            warn("[NOVERA] Canal de chat indisponível.")
-            Busy = false
+            SetStatus("CHAT INDISPONIVEL", Color3.fromRGB(255, 100, 100))
+            Sending = false
             return
         end
 
@@ -79,35 +246,204 @@ local function ExecuteCommand(command)
             end)
 
             if not success then
-                warn("[NOVERA] Erro:", err)
+                warn("[NOVERA] Chat error:", err)
+                SetStatus("FALHA NO ENVIO", Color3.fromRGB(255, 100, 100))
                 break
             end
 
+            SetStatus(
+                command.Name .. "  " .. i .. "/" .. command.Repetitions,
+                BLUE
+            )
+
             if i < command.Repetitions then
-                task.wait(CONFIG.RepeatDelay)
+                task.wait(CONFIG.SendInterval)
             end
         end
 
-        Busy = false
+        task.wait(1)
+        SetStatus("SYSTEM ONLINE")
+        Sending = false
     end)
 end
 
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
+-- CREATE COMMAND ROWS
+for index, command in ipairs(Commands) do
+
+    local Row = Instance.new("Frame")
+    Row.Name = command.Id
+    Row.Size = UDim2.new(1, 0, 0, 34)
+    Row.BackgroundColor3 = BUTTON
+    Row.LayoutOrder = index
+    Row.Parent = List
+
+    Corner(Row, 7)
+
+    local Name = Instance.new("TextLabel")
+    Name.Size = UDim2.new(1, -110, 1, 0)
+    Name.Position = UDim2.fromOffset(8, 0)
+    Name.BackgroundTransparency = 1
+    Name.Text = command.Name
+    Name.TextColor3 = WHITE
+    Name.TextSize = 10
+    Name.Font = Enum.Font.GothamBold
+    Name.TextXAlignment = Enum.TextXAlignment.Left
+    Name.Parent = Row
+
+    local KeyLabel = Instance.new("TextLabel")
+    KeyLabel.Size = UDim2.fromOffset(28, 28)
+    KeyLabel.Position = UDim2.new(1, -99, 0, 3)
+    KeyLabel.BackgroundColor3 = DARK
+    KeyLabel.Text = Bindings[command.Id].Name
+    KeyLabel.TextColor3 = WHITE
+    KeyLabel.TextSize = 11
+    KeyLabel.Font = Enum.Font.GothamBold
+    KeyLabel.Parent = Row
+
+    Corner(KeyLabel, 5)
+
+    local Change = Instance.new("TextButton")
+    Change.Size = UDim2.fromOffset(61, 27)
+    Change.Position = UDim2.new(1, -67, 0, 3)
+    Change.BackgroundColor3 = BLUE
+    Change.Text = "ALTERAR"
+    Change.TextColor3 = WHITE
+    Change.TextSize = 9
+    Change.Font = Enum.Font.GothamBold
+    Change.Parent = Row
+
+    Corner(Change, 5)
+
+    Change.Activated:Connect(function()
+        WaitingForKey = {
+            Id = command.Id,
+            Label = KeyLabel
+        }
+
+        Instruction.Text = "PRESSIONE UMA TECLA..."
+        SetStatus("AGUARDANDO TECLA", BLUE)
+    end)
+
+    command.KeyLabel = KeyLabel
+end
+
+-- INPUT MANAGER
+UIS.InputBegan:Connect(function(input, gameProcessed)
+
+    -- CAPTURE NEW KEY
+    if WaitingForKey then
+
+        if input.UserInputType ~= Enum.UserInputType.Keyboard then
+            return
+        end
+
+        local key = input.KeyCode
+
+        if key == Enum.KeyCode.Unknown then
+            return
+        end
+
+        if key == Enum.KeyCode.Escape then
+            WaitingForKey = nil
+            Instruction.Text = "Selecione ALTERAR e pressione uma tecla."
+            SetStatus("ALTERACAO CANCELADA")
+            return
+        end
+
+        local conflict = KeyAlreadyUsed(
+            key,
+            WaitingForKey.Id
+        )
+
+        if conflict then
+            SetStatus("TECLA JA UTILIZADA", Color3.fromRGB(255, 150, 70))
+            return
+        end
+
+        local id = WaitingForKey.Id
+        Bindings[id] = key
+
+        WaitingForKey.Label.Text = key.Name
+        WaitingForKey = nil
+
+        Instruction.Text = "Selecione ALTERAR e pressione uma tecla."
+        SetStatus("ATALHO ATUALIZADO")
+
+        return
+    end
+
+    -- NORMAL KEYBIND EXECUTION
     if gameProcessed then
         return
     end
 
-    if UserInputService:GetFocusedTextBox() then
+    if UIS:GetFocusedTextBox() then
         return
     end
 
-    local command = Commands[input.KeyCode]
+    if not Main.Visible then
+        -- Atalhos continuam ativos com painel fechado.
+    end
 
-    if command then
-        ExecuteCommand(command)
-        print("[NOVERA] Executando:", command.Name)
+    for id, key in pairs(Bindings) do
+        if input.KeyCode == key then
+            local command = GetCommandById(id)
+
+            if command then
+                SendCommand(command)
+            end
+
+            return
+        end
     end
 end)
 
-print("[NOVERA] Keyboard System online.")
-print("[NOVERA] V | R | F | B | P")
+-- OPEN / CLOSE
+Toggle.Activated:Connect(function()
+    Main.Visible = not Main.Visible
+end)
+
+Close.Activated:Connect(function()
+    Main.Visible = false
+end)
+
+-- DRAG PANEL
+local Dragging = false
+local DragStart
+local StartPosition
+
+Header.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+
+        Dragging = true
+        DragStart = input.Position
+        StartPosition = Main.Position
+    end
+end)
+
+UIS.InputChanged:Connect(function(input)
+    if Dragging and (
+        input.UserInputType == Enum.UserInputType.MouseMovement
+        or input.UserInputType == Enum.UserInputType.Touch
+    ) then
+
+        local delta = input.Position - DragStart
+
+        Main.Position = UDim2.new(
+            StartPosition.X.Scale,
+            StartPosition.X.Offset + delta.X,
+            StartPosition.Y.Scale,
+            StartPosition.Y.Offset + delta.Y
+        )
+    end
+end)
+
+UIS.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+        Dragging = false
+    end
+end)
+
+print("[NOVERA] KEYBIND MANAGER ONLINE")
