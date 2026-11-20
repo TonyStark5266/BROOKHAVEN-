@@ -50,7 +50,7 @@ local function SendCommand(message, amount)
         SendChat(message)
 
         if i < amount then
-            task.wait(0.5)
+            task.wait(0.1)
         end
     end
 end
@@ -91,7 +91,7 @@ ButtonStroke.Parent = ToggleButton
 
 local Panel = Instance.new("Frame")
 Panel.Name = "CommandPanel"
-Panel.Size = UDim2.fromOffset(285, 390)
+Panel.Size = UDim2.fromOffset(200, 200)
 Panel.Position = UDim2.new(0, 80, 0.5, -195)
 Panel.BackgroundColor3 = CONFIG.PanelColor
 Panel.BackgroundTransparency = 0.05
