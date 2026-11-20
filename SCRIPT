@@ -1,0 +1,449 @@
+
+--==================================================
+-- BUILD 06 | UNIFIED SYSTEM
+-- COMMAND PANEL + MILITARY ESP
+-- LocalScript: StarterPlayerScripts
+--==================================================
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local TextChatService = game:GetService("TextChatService")
+
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+--==================================================
+-- CONFIGURATION
+--==================================================
+
+local CONFIG = {
+    MaxDistance = 500,
+    UpdateInterval = 0.15,
+    ESPColor = Color3.fromRGB(220, 35, 35),
+    PanelColor = Color3.fromRGB(18, 18, 22),
+    AccentColor = Color3.fromRGB(190, 25, 25)
+}
+
+local Enabled = true
+local LastUpdate = 0
+local ESPObjects = {}
+
+--==================================================
+-- CHAT SYSTEM
+--==================================================
+
+local function SendChat(message)
+    local channels = TextChatService:FindFirstChild("TextChannels")
+    if not channels then return end
+
+    local channel = channels:FindFirstChild("RBXGeneral")
+    if channel then
+        channel:SendAsync(message)
+    end
+end
+
+local function SendCommand(message, amount)
+    amount = amount or 1
+
+    for i = 1, amount do
+        SendChat(message)
+
+        if i < amount then
+            task.wait(0.5)
+        end
+    end
+end
+
+--==================================================
+-- GUI
+--==================================================
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "BUILD06_Interface"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = PlayerGui
+
+-- Floating V Button
+
+local ToggleButton = Instance.new("TextButton")
+ToggleButton.Name = "VButton"
+ToggleButton.Size = UDim2.fromOffset(48, 48)
+ToggleButton.Position = UDim2.new(0, 20, 0.5, -24)
+ToggleButton.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
+ToggleButton.BackgroundTransparency = 0.2
+ToggleButton.Text = "V"
+ToggleButton.TextColor3 = Color3.fromRGB(230, 30, 30)
+ToggleButton.TextSize = 25
+ToggleButton.Font = Enum.Font.GothamBold
+ToggleButton.Parent = ScreenGui
+
+local ButtonCorner = Instance.new("UICorner")
+ButtonCorner.CornerRadius = UDim.new(1, 0)
+ButtonCorner.Parent = ToggleButton
+
+local ButtonStroke = Instance.new("UIStroke")
+ButtonStroke.Color = CONFIG.AccentColor
+ButtonStroke.Thickness = 1.5
+ButtonStroke.Parent = ToggleButton
+
+-- Main Panel
+
+local Panel = Instance.new("Frame")
+Panel.Name = "CommandPanel"
+Panel.Size = UDim2.fromOffset(285, 390)
+Panel.Position = UDim2.new(0, 80, 0.5, -195)
+Panel.BackgroundColor3 = CONFIG.PanelColor
+Panel.BackgroundTransparency = 0.05
+Panel.Visible = true
+Panel.Parent = ScreenGui
+
+local PanelCorner = Instance.new("UICorner")
+PanelCorner.CornerRadius = UDim.new(0, 10)
+PanelCorner.Parent = Panel
+
+local PanelStroke = Instance.new("UIStroke")
+PanelStroke.Color = Color3.fromRGB(75, 75, 82)
+PanelStroke.Thickness = 1
+PanelStroke.Parent = Panel
+
+-- Header
+
+local Header = Instance.new("TextLabel")
+Header.Size = UDim2.new(1, -20, 0, 38)
+Header.Position = UDim2.fromOffset(10, 5)
+Header.BackgroundTransparency = 1
+Header.Text = "BUILD 06  //  COMMAND"
+Header.TextColor3 = Color3.fromRGB(235, 235, 235)
+Header.TextSize = 15
+Header.Font = Enum.Font.GothamBold
+Header.TextXAlignment = Enum.TextXAlignment.Left
+Header.Parent = Panel
+
+local Divider = Instance.new("Frame")
+Divider.Size = UDim2.new(1, -20, 0, 1)
+Divider.Position = UDim2.fromOffset(10, 43)
+Divider.BackgroundColor3 = CONFIG.AccentColor
+Divider.BorderSizePixel = 0
+Divider.Parent = Panel
+
+-- Command List
+
+local CommandList = Instance.new("ScrollingFrame")
+CommandList.Size = UDim2.new(1, -20, 0, 165)
+CommandList.Position = UDim2.fromOffset(10, 52)
+CommandList.BackgroundTransparency = 1
+CommandList.BorderSizePixel = 0
+CommandList.ScrollBarThickness = 3
+CommandList.CanvasSize = UDim2.fromOffset(0, 0)
+CommandList.Parent = Panel
+
+local Layout = Instance.new("UIListLayout")
+Layout.Padding = UDim.new(0, 6)
+Layout.Parent = CommandList
+
+local function CreateCommandButton(label, command, amount)
+    local Button = Instance.new("TextButton")
+    Button.Size = UDim2.new(1, -5, 0, 34)
+    Button.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
+    Button.Text = label
+    Button.TextColor3 = Color3.fromRGB(230, 230, 230)
+    Button.TextSize = 12
+    Button.Font = Enum.Font.GothamMedium
+    Button.Parent = CommandList
+
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 5)
+    Corner.Parent = Button
+
+    Button.MouseButton1Click:Connect(function()
+        SendCommand(command, amount)
+    end)
+
+    return Button
+end
+
+local Commands = {
+    {"/tiro na cara", "/tiro na cara"},
+    {"/render", "/render"},
+    {"/facada", "/facada"},
+    {"/tiro no pneu", "/tiro no pneu"}
+}
+
+for _, data in ipairs(Commands) do
+    CreateCommandButton(data[1] .. "  [1X]", data[2], 1)
+    CreateCommandButton(data[1] .. "  [3X]", data[2], 3)
+end
+
+CreateCommandButton("/pd", "/pd", 1)
+
+Layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    CommandList.CanvasSize = UDim2.fromOffset(
+        0,
+        Layout.AbsoluteContentSize.Y + 5
+    )
+end)
+
+-- ESP Section
+
+local ESPTitle = Instance.new("TextLabel")
+ESPTitle.Size = UDim2.new(1, -20, 0, 25)
+ESPTitle.Position = UDim2.fromOffset(10, 282)
+ESPTitle.BackgroundTransparency = 1
+ESPTitle.Text = "PLAYER IDENTIFICATION"
+ESPTitle.TextColor3 = CONFIG.ESPColor
+ESPTitle.TextSize = 12
+ESPTitle.Font = Enum.Font.GothamBold
+ESPTitle.TextXAlignment = Enum.TextXAlignment.Left
+ESPTitle.Parent = Panel
+
+local ESPStatus = Instance.new("TextLabel")
+ESPStatus.Size = UDim2.new(1, -20, 0, 22)
+ESPStatus.Position = UDim2.fromOffset(10, 308)
+ESPStatus.BackgroundTransparency = 1
+ESPStatus.Text = "ESP: ACTIVE"
+ESPStatus.TextColor3 = Color3.fromRGB(80, 220, 110)
+ESPStatus.TextSize = 12
+ESPStatus.Font = Enum.Font.Gotham
+ESPStatus.TextXAlignment = Enum.TextXAlignment.Left
+ESPStatus.Parent = Panel
+
+local ESPButton = Instance.new("TextButton")
+ESPButton.Size = UDim2.new(1, -20, 0, 35)
+ESPButton.Position = UDim2.fromOffset(10, 340)
+ESPButton.BackgroundColor3 = Color3.fromRGB(55, 25, 25)
+ESPButton.Text = "DISABLE ESP"
+ESPButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ESPButton.TextSize = 12
+ESPButton.Font = Enum.Font.GothamBold
+ESPButton.Parent = Panel
+
+local ESPButtonCorner = Instance.new("UICorner")
+ESPButtonCorner.CornerRadius = UDim.new(0, 5)
+ESPButtonCorner.Parent = ESPButton
+
+--==================================================
+-- DRAG SYSTEM
+--==================================================
+
+local function MakeDraggable(object)
+    local dragging = false
+    local dragStart
+    local startPosition
+
+    object.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPosition = object.Position
+
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and (
+            input.UserInputType == Enum.UserInputType.MouseMovement
+            or input.UserInputType == Enum.UserInputType.Touch
+        ) then
+            local delta = input.Position - dragStart
+
+            object.Position = UDim2.new(
+                startPosition.X.Scale,
+                startPosition.X.Offset + delta.X,
+                startPosition.Y.Scale,
+                startPosition.Y.Offset + delta.Y
+            )
+        end
+    end)
+end
+
+MakeDraggable(Panel)
+MakeDraggable(ToggleButton)
+
+ToggleButton.MouseButton1Click:Connect(function()
+    Panel.Visible = not Panel.Visible
+end)
+
+--==================================================
+-- ESP SYSTEM
+--==================================================
+
+local function RemoveESP(player)
+    local objects = ESPObjects[player]
+
+    if objects then
+        if objects.Highlight then
+            objects.Highlight:Destroy()
+        end
+
+        if objects.Billboard then
+            objects.Billboard:Destroy()
+        end
+
+        ESPObjects[player] = nil
+    end
+end
+
+local function SetupESP(player)
+    if player == LocalPlayer then return end
+
+    RemoveESP(player)
+
+    local character = player.Character
+    if not character then return end
+
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    local head = character:FindFirstChild("Head")
+
+    if not humanoid or not head then return end
+
+    -- Outline
+
+    local Highlight = Instance.new("Highlight")
+    Highlight.Name = "BUILD06_Outline"
+    Highlight.Adornee = character
+    Highlight.FillTransparency = 1
+    Highlight.OutlineColor = CONFIG.ESPColor
+    Highlight.OutlineTransparency = 0
+    Highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    Highlight.Parent = character
+
+    -- Name and Distance
+
+    local Billboard = Instance.new("BillboardGui")
+    Billboard.Name = "BUILD06_Identification"
+    Billboard.Adornee = head
+    Billboard.Size = UDim2.fromOffset(190, 42)
+    Billboard.StudsOffset = Vector3.new(0, 2.5, 0)
+    Billboard.AlwaysOnTop = true
+    Billboard.Parent = PlayerGui
+
+    local Label = Instance.new("TextLabel")
+    Label.Size = UDim2.fromScale(1, 1)
+    Label.BackgroundTransparency = 1
+    Label.TextColor3 = CONFIG.ESPColor
+    Label.TextStrokeTransparency = 0.3
+    Label.TextSize = 13
+    Label.Font = Enum.Font.GothamBold
+    Label.Text = player.Name
+    Label.Parent = Billboard
+
+    ESPObjects[player] = {
+        Highlight = Highlight,
+        Billboard = Billboard,
+        Label = Label
+    }
+end
+
+local function UpdateESP()
+    local myCharacter = LocalPlayer.Character
+    local myRoot = myCharacter and myCharacter:FindFirstChild("HumanoidRootPart")
+
+    if not myRoot then return end
+
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            local character = player.Character
+            local root = character and character:FindFirstChild("HumanoidRootPart")
+            local objects = ESPObjects[player]
+
+            if character and root then
+                if not objects then
+                    SetupESP(player)
+                    objects = ESPObjects[player]
+                end
+
+                if objects then
+                    local distance = (myRoot.Position - root.Position).Magnitude
+                    local visible = Enabled and distance <= CONFIG.MaxDistance
+
+                    objects.Highlight.Enabled = visible
+                    objects.Billboard.Enabled = visible
+
+                    if objects.Label then
+                        objects.Label.Text = string.format(
+                            "%s\n%dm",
+                            player.Name,
+                            math.floor(distance)
+                        )
+                    end
+                end
+            else
+                RemoveESP(player)
+            end
+        end
+    end
+end
+
+--==================================================
+-- ESP CONTROLS
+--==================================================
+
+ESPButton.MouseButton1Click:Connect(function()
+    Enabled = not Enabled
+
+    if Enabled then
+        ESPButton.Text = "DISABLE ESP"
+        ESPStatus.Text = "ESP: ACTIVE"
+        ESPStatus.TextColor3 = Color3.fromRGB(80, 220, 110)
+    else
+        ESPButton.Text = "ENABLE ESP"
+        ESPStatus.Text = "ESP: DISABLED"
+        ESPStatus.TextColor3 = Color3.fromRGB(220, 80, 80)
+
+        for _, objects in pairs(ESPObjects) do
+            objects.Highlight.Enabled = false
+            objects.Billboard.Enabled = false
+        end
+    end
+end)
+
+--==================================================
+-- PLAYER EVENTS
+--==================================================
+
+local function RegisterPlayer(player)
+    player.CharacterAdded:Connect(function()
+        task.wait(0.5)
+        SetupESP(player)
+    end)
+
+    player.CharacterRemoving:Connect(function()
+        RemoveESP(player)
+    end)
+
+    if player.Character then
+        SetupESP(player)
+    end
+end
+
+for _, player in ipairs(Players:GetPlayers()) do
+    RegisterPlayer(player)
+end
+
+Players.PlayerAdded:Connect(RegisterPlayer)
+
+Players.PlayerRemoving:Connect(function(player)
+    RemoveESP(player)
+end)
+
+--==================================================
+-- MAIN LOOP
+--==================================================
+
+RunService.RenderStepped:Connect(function()
+    if not Enabled then return end
+
+    if os.clock() - LastUpdate >= CONFIG.UpdateInterval then
+        LastUpdate = os.clock()
+        UpdateESP()
+    end
+end)
+
+print("[BUILD 06] Unified System Loaded.")
